@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import MobileMenu from './components/MobileMenu';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -8,6 +9,7 @@ import Items from './pages/Items';
 import ItemDetail from './pages/ItemDetail';
 import ItemForm from './pages/ItemForm';
 import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 import './App.css';
 
 /**
@@ -56,30 +58,33 @@ const Navigation = () => {
  */
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app">
-          <Navigation />
-          
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/items" element={<Items />} />
-              <Route path="/items/new" element={<ItemForm />} />
-              <Route path="/items/:id" element={<ItemDetail />} />
-              <Route path="/items/:id/edit" element={<ItemForm />} />
-              <Route path="/profile" element={<Profile />} />
-            </Routes>
-          </main>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="app">
+            <Navigation />
+            
+            <main className="main-content">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/items" element={<Items />} />
+                <Route path="/items/new" element={<ItemForm />} />
+                <Route path="/items/:id" element={<ItemDetail />} />
+                <Route path="/items/:id/edit" element={<ItemForm />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </main>
 
-          <footer className="footer">
-            <p>&copy; 2026 KampusKart. All rights reserved.</p>
-          </footer>
-        </div>
-      </Router>
-    </AuthProvider>
+            <footer className="footer">
+              <p>&copy; 2026 KampusKart. All rights reserved.</p>
+            </footer>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
