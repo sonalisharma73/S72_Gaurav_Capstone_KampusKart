@@ -1,22 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FeatureModal } from './common/FeatureModal';
-import { SuccessMessage } from './common/SuccessMessage';
-import { PageSkeleton } from './common/SkeletonLoader';
-import { Footer } from './ui/footer';
-import { socialLinks } from '../utils/socialLinks';
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions';
+import { useAuth } from '../../../contexts/AuthContext';
+import { FeatureModal } from '../../../components/common/FeatureModal';
+import { SuccessMessage } from '../../../components/common/SuccessMessage';
+import { PageSkeleton } from '../../../components/common/SkeletonLoader';
+import { Footer } from '../../../components/ui/footer';
+import { socialLinks } from '../../../utils/socialLinks';
+import { useSearchSuggestions } from '../../../hooks/useSearchSuggestions';
 
-// Import from the feature directory
-import {
-  useLostFound,
-  LostFoundCard,
-  LostFoundFilters,
-  LostFoundForm,
-  LostFoundDetail,
-  lostFoundApi,
-} from '../features/lostfound';
-import type { LostFoundItem } from '../features/lostfound/types';
+import { useLostFound } from '../hooks/useLostFound';
+import { LostFoundCard } from './LostFoundCard';
+import { LostFoundFilters } from './LostFoundFilters';
+import { LostFoundForm } from './LostFoundForm';
+import { LostFoundDetail } from './LostFoundDetail';
+import { lostFoundApi } from '../api';
+import type { LostFoundItem } from '../types';
 
 const LostFound = () => {
   const { token, user } = useAuth();

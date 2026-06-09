@@ -1,9 +1,9 @@
 {
-  "**/*.{js,jsx,ts,tsx}": [
-    "eslint --fix",
+  "frontend/**/*.{js,jsx,ts,tsx}": [
+    "npx --prefix frontend eslint --fix -c frontend/eslint.config.js",
     "prettier --write"
   ],
-  "**/*.{json,md}": [
-    "prettier --write"
-  ]
+  "backend/**/*.{js,jsx,ts,tsx}": ["npx --prefix backend eslint --fix", "prettier --write"],
+  "scripts/**/*.{js,jsx,ts,tsx}": ["prettier --write"],
+  "**/*.{json,md}": ["prettier --write"]
 }

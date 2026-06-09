@@ -1,4 +1,4 @@
-export { default } from '../../components/Events';
+export { default } from './components/Events';
 // Intentionally not re-exporting './types' here to avoid name collisions
 export * from './api';
 export * from './hooks/useEvents';

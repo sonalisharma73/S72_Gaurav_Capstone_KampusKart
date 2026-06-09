@@ -1,79 +1,85 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FeatureModal } from './common/FeatureModal';
-import { SuccessMessage } from './common/SuccessMessage';
-import { PageSkeleton } from './common/SkeletonLoader';
-import { Footer } from './ui/footer';
-import { socialLinks } from '../utils/socialLinks';
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions';
+import { useAuth } from '../../../contexts/AuthContext';
+import { FeatureModal } from '../../../components/common/FeatureModal';
+import { SuccessMessage } from '../../../components/common/SuccessMessage';
+import { PageSkeleton } from '../../../components/common/SkeletonLoader';
+import { Footer } from '../../../components/ui/footer';
+import { socialLinks } from '../../../utils/socialLinks';
+import { useSearchSuggestions } from '../../../hooks/useSearchSuggestions';
 
-// Import from the feature directory
-import { useNews, NewsCard, NewsFilters, NewsForm, NewsDetail, newsApi } from '../features/news';
-import type { NewsItem } from '../features/news/types';
+import { useFacilities } from '../hooks/useFacilities';
+import { FacilityCard } from './FacilityCard';
+import { FacilityFilters } from './FacilityFilters';
+import { FacilityForm } from './FacilityForm';
+import { FacilityDetail } from './FacilityDetail';
+import { facilitiesApi } from '../api';
+import type { Facility } from '../types';
 
-const News = () => {
+const Facilities = () => {
   const { token, user } = useAuth();
 
   // Custom hook for state and data fetching
   const {
-    news,
+    facilities,
     loading,
     error: fetchError,
     filters,
     updateFilters,
     refresh,
-    removeNews,
-  } = useNews(token);
+    removeFacility,
+  } = useFacilities(token);
 
   // Local UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'form' | 'detail' | 'delete'>('form');
-  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Search Suggestions Hook
-  const buildSuggestions = useCallback((item: NewsItem, query: string): string[] => {
+  const buildSuggestions = useCallback((facility: Facility, query: string): string[] => {
     const suggestions: string[] = [];
     const normalizedQuery = query.toLowerCase();
-    if (item.title?.toLowerCase().includes(normalizedQuery)) suggestions.push(item.title);
-    if (item.category?.toLowerCase().includes(normalizedQuery)) suggestions.push(item.category);
+    if (facility.name?.toLowerCase().includes(normalizedQuery)) suggestions.push(facility.name);
+    if (facility.location?.toLowerCase().includes(normalizedQuery))
+      suggestions.push(facility.location);
+    if (facility.type?.toLowerCase().includes(normalizedQuery)) suggestions.push(facility.type);
     return suggestions;
   }, []);
 
   const { showSuggestions, setShowSuggestions, filteredSuggestions, searchRef } =
-    useSearchSuggestions<NewsItem>({
+    useSearchSuggestions<Facility>({
       searchInput: filters.search,
-      items: news,
+      items: facilities,
       buildSuggestions,
     });
 
   // Modal handlers
   const openAddModal = () => {
-    setSelectedNews(null);
+    setSelectedFacility(null);
     setModalType('form');
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: NewsItem) => {
-    setSelectedNews(item);
+  const openEditModal = (facility: Facility) => {
+    setSelectedFacility(facility);
     setModalType('form');
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openDetailModal = (item: NewsItem) => {
-    setSelectedNews(item);
+  const openDetailModal = (facility: Facility) => {
+    setSelectedFacility(facility);
     setModalType('detail');
     setIsModalOpen(true);
   };
 
   const openDeleteModal = (id: string) => {
-    const item = news.find((n) => n._id === id);
-    if (item) {
-      setSelectedNews(item);
+    const facility = facilities.find((f) => f._id === id);
+    if (facility) {
+      setSelectedFacility(facility);
       setModalType('delete');
       setIsModalOpen(true);
     }
@@ -81,17 +87,8 @@ const News = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setSelectedNews(null);
+    setSelectedFacility(null);
     setFormError(null);
-  };
-
-  const handleDelete = async () => {
-    if (!selectedNews) return;
-    const success = await removeNews(selectedNews._id);
-    if (success) {
-      setSuccessMessage('News deleted successfully!');
-      closeModal();
-    }
   };
 
   // Action handlers
@@ -101,19 +98,28 @@ const News = () => {
     setFormError(null);
 
     try {
-      if (selectedNews) {
-        await newsApi.updateNews(token, selectedNews._id, formData);
-        setSuccessMessage('News updated successfully!');
+      if (selectedFacility) {
+        await facilitiesApi.updateFacility(token, selectedFacility._id, formData);
+        setSuccessMessage('Facility updated successfully!');
       } else {
-        await newsApi.createNews(token, formData);
-        setSuccessMessage('News added successfully!');
+        await facilitiesApi.createFacility(token, formData);
+        setSuccessMessage('Facility added successfully!');
       }
       refresh();
       closeModal();
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Failed to save news');
+      setFormError(err instanceof Error ? err.message : 'Failed to save facility');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFacility) return;
+    const success = await removeFacility(selectedFacility._id);
+    if (success) {
+      setSuccessMessage('Facility deleted successfully!');
+      closeModal();
     }
   };
 
@@ -125,7 +131,7 @@ const News = () => {
     }
   }, [successMessage]);
 
-  if (loading && news.length === 0) {
+  if (loading && facilities.length === 0) {
     return (
       <PageSkeleton
         contentType="cards"
@@ -136,12 +142,12 @@ const News = () => {
     );
   }
 
-  const filteredNews = news.filter((n) => {
+  const filteredFacilities = facilities.filter((f) => {
     const matchesSearch =
-      n.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-      n.description.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesCategory = filters.category === 'All' || n.category === filters.category;
-    return matchesSearch && matchesCategory;
+      f.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      f.description.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesType = filters.type === 'All' || f.type === filters.type;
+    return matchesSearch && matchesType;
   });
 
   return (
@@ -150,18 +156,18 @@ const News = () => {
         <SuccessMessage message={successMessage} onDismiss={() => setSuccessMessage(null)} />
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <h1 className="text-h2 font-extrabold text-black">Campus News</h1>
+          <h1 className="text-h2 font-extrabold text-black">Campus Facilities</h1>
           {user?.isAdmin && (
             <button
               onClick={openAddModal}
               className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#181818] text-white font-bold text-lg hover:bg-[#00C6A7] transition-colors"
             >
-              + Add News
+              + Add Facility
             </button>
           )}
         </div>
 
-        <NewsFilters
+        <FacilityFilters
           filters={filters}
           onFilterChange={updateFilters}
           suggestions={filteredSuggestions}
@@ -177,20 +183,20 @@ const News = () => {
           </div>
         )}
 
-        {/* News Grid */}
+        {/* Facilities Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNews.length === 0 ? (
+          {filteredFacilities.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-xl font-bold text-gray-700">No news found</p>
+              <p className="text-xl font-bold text-gray-700">No facilities found</p>
               <p className="text-gray-400 text-sm mt-2">
                 Try adjusting your filters or search terms.
               </p>
             </div>
           ) : (
-            filteredNews.map((item) => (
-              <NewsCard
-                key={item._id}
-                news={item}
+            filteredFacilities.map((facility) => (
+              <FacilityCard
+                key={facility._id}
+                facility={facility}
                 isAdmin={user?.isAdmin}
                 onSelect={openDetailModal}
                 onEdit={openEditModal}
@@ -206,28 +212,28 @@ const News = () => {
           onClose={closeModal}
           title={
             modalType === 'form'
-              ? selectedNews
-                ? 'Edit News'
-                : 'Add News'
+              ? selectedFacility
+                ? 'Edit Facility'
+                : 'Add New Facility'
               : modalType === 'detail'
-                ? 'News Details'
+                ? 'Facility Details'
                 : 'Confirm Delete'
           }
           error={formError}
           size={modalType === 'detail' ? 'xl' : 'md'}
         >
           {modalType === 'form' && (
-            <NewsForm
-              news={selectedNews}
+            <FacilityForm
+              facility={selectedFacility}
               onSubmit={handleFormSubmit}
               isSubmitting={isSubmitting}
               error={formError}
             />
           )}
 
-          {modalType === 'detail' && selectedNews && (
-            <NewsDetail
-              news={selectedNews}
+          {modalType === 'detail' && selectedFacility && (
+            <FacilityDetail
+              facility={selectedFacility}
               isAdmin={user?.isAdmin}
               onEdit={openEditModal}
               onDelete={openDeleteModal}
@@ -236,9 +242,9 @@ const News = () => {
 
           {modalType === 'delete' && (
             <div className="p-6 text-center">
-              <h3 className="text-xl font-bold mb-4">Delete News Item?</h3>
+              <h3 className="text-xl font-bold mb-4">Delete Facility?</h3>
               <p className="text-gray-600 mb-8">
-                Are you sure you want to delete &quot;{selectedNews?.title}&quot;? This action
+                Are you sure you want to delete &quot;{selectedFacility?.name}&quot;? This action
                 cannot be undone.
               </p>
               <div className="flex justify-center gap-4">
@@ -252,7 +258,7 @@ const News = () => {
                   onClick={handleDelete}
                   className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold"
                 >
-                  Delete News
+                  Delete Facility
                 </button>
               </div>
             </div>
@@ -282,4 +288,4 @@ const News = () => {
   );
 };
 
-export default News;
+export default Facilities;

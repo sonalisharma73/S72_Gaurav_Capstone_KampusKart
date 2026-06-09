@@ -1,22 +1,19 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FeatureModal } from './common/FeatureModal';
-import { SuccessMessage } from './common/SuccessMessage';
-import { PageSkeleton } from './common/SkeletonLoader';
-import { Footer } from './ui/footer';
-import { socialLinks } from '../utils/socialLinks';
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions';
+import { useAuth } from '../../../contexts/AuthContext';
+import { FeatureModal } from '../../../components/common/FeatureModal';
+import { SuccessMessage } from '../../../components/common/SuccessMessage';
+import { PageSkeleton } from '../../../components/common/SkeletonLoader';
+import { Footer } from '../../../components/ui/footer';
+import { socialLinks } from '../../../utils/socialLinks';
+import { useSearchSuggestions } from '../../../hooks/useSearchSuggestions';
 
-// Import from the feature directory
-import {
-  useEvents,
-  EventCard,
-  EventFilters,
-  EventForm,
-  EventDetail,
-  eventsApi,
-} from '../features/events';
-import type { Event } from '../features/events/types';
+import { useEvents } from '../hooks/useEvents';
+import { EventCard } from './EventCard';
+import { EventFilters } from './EventFilters';
+import { EventForm } from './EventForm';
+import { EventDetail } from './EventDetail';
+import { eventsApi } from '../api';
+import type { Event } from '../types';
 
 const Events = () => {
   const { user, token } = useAuth();

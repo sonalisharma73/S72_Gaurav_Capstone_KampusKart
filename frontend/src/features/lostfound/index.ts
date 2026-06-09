@@ -1,4 +1,4 @@
-export { default } from '../../components/LostFound';
+export { default } from './components/LostFound';
 // Intentionally not re-exporting './types' here to avoid name collisions
 export * from './api';
 export * from './hooks/useLostFound';

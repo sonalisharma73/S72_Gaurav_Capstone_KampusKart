@@ -1,22 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FeatureModal } from './common/FeatureModal';
-import { SuccessMessage } from './common/SuccessMessage';
-import { PageSkeleton } from './common/SkeletonLoader';
-import { Footer } from './ui/footer';
-import { socialLinks } from '../utils/socialLinks';
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions';
+import { useAuth } from '../../../contexts/AuthContext';
+import { FeatureModal } from '../../../components/common/FeatureModal';
+import { SuccessMessage } from '../../../components/common/SuccessMessage';
+import { PageSkeleton } from '../../../components/common/SkeletonLoader';
+import { Footer } from '../../../components/ui/footer';
+import { socialLinks } from '../../../utils/socialLinks';
+import { useSearchSuggestions } from '../../../hooks/useSearchSuggestions';
 
-// Import from the feature directory
-import {
-  useComplaints,
-  ComplaintCard,
-  ComplaintFilters,
-  ComplaintForm,
-  ComplaintDetail,
-  complaintsApi,
-} from '../features/complaints';
-import type { Complaint } from '../features/complaints/types';
+import { useComplaints } from '../hooks/useComplaints';
+import { ComplaintCard } from './ComplaintCard';
+import { ComplaintFilters } from './ComplaintFilters';
+import { ComplaintForm } from './ComplaintForm';
+import { ComplaintDetail } from './ComplaintDetail';
+import { complaintsApi } from '../api';
+import type { Complaint } from '../types';
 
 const Complaints = () => {
   const { token, user } = useAuth();

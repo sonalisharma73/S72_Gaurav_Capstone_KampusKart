@@ -52,10 +52,12 @@ export const LostFoundForm: React.FC<LostFoundFormProps> = ({
       }
       case 'date': {
         if (!value) return 'Date is required';
-        const selectedDate = new Date(value);
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (selectedDate > today) return 'Date cannot be in the future';
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const localTodayStr = `${year}-${month}-${day}`;
+        if (value > localTodayStr) return 'Date cannot be in the future';
         return null;
       }
       case 'contact': {

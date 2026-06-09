@@ -1,4 +1,4 @@
-export { default } from '../../components/Complaints';
+export { default } from './components/Complaints';
 // Intentionally not re-exporting './types' here to avoid name collisions
 export * from './api';
 export * from './hooks/useComplaints';

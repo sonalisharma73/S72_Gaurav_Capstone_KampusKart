@@ -12,16 +12,29 @@ jest.mock('cloudinary', () => ({
         const { PassThrough } = require('stream');
         const stream = new PassThrough();
         // call callback after stream finishes
-        stream.on('finish', () => cb(null, { secure_url: 'https://res.cloudinary.com/test/image.jpg', public_id: 'test-id' }));
+        stream.on('finish', () =>
+          cb(null, {
+            secure_url: 'https://res.cloudinary.com/test/image.jpg',
+            public_id: 'test-id',
+          })
+        );
         return stream;
       },
-      destroy: jest.fn()
+      destroy: jest.fn(),
     },
-    config: jest.fn()
-  }
+    config: jest.fn(),
+  },
 }));
 
 // routes will be required after mocking auth middleware in beforeAll
+
+jest.mock('../../middleware/auth', () => ({
+  authMiddleware: (req, res, next) => {
+    req.user = { _id: '64b000000000000000000002', email: 'test@test.com' };
+    next();
+  },
+  requireAdmin: () => (req, res, next) => next(),
+}));
 
 describe('Chat integration routes', () => {
   let app;
@@ -35,17 +48,8 @@ describe('Chat integration routes', () => {
       _id: TEST_USER_ID,
       email: 'test@test.com',
       name: 'Test User',
-      password: 'Pass1234!'
+      password: 'Pass1234!',
     });
-
-    // Mock auth middleware before requiring routes (use static user to keep mock factory pure)
-    jest.mock('../../middleware/auth', () => ({
-      authMiddleware: (req, res, next) => {
-        req.user = { _id: '64b000000000000000000002', email: 'test@test.com' };
-        next();
-      },
-      requireAdmin: () => (req, res, next) => next()
-    }));
 
     const chatRoutes = require('../../routes/chat');
     app.use('/api/chat', chatRoutes);

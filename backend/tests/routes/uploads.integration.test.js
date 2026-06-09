@@ -11,13 +11,26 @@ jest.mock('cloudinary', () => ({
       upload_stream: (opts, cb) => {
         const { PassThrough } = require('stream');
         const stream = new PassThrough();
-        stream.on('finish', () => cb(null, { secure_url: 'https://res.cloudinary.com/test/image.jpg', public_id: 'test-id' }));
+        stream.on('finish', () =>
+          cb(null, {
+            secure_url: 'https://res.cloudinary.com/test/image.jpg',
+            public_id: 'test-id',
+          })
+        );
         return stream;
       },
-      destroy: jest.fn()
+      destroy: jest.fn(),
     },
-    config: jest.fn()
-  }
+    config: jest.fn(),
+  },
+}));
+
+jest.mock('../../middleware/auth', () => ({
+  authMiddleware: (req, res, next) => {
+    req.user = { _id: '64b000000000000000000003', email: 'uploader@test.com' };
+    next();
+  },
+  requireAdmin: () => (req, res, next) => next(),
 }));
 
 describe('Uploads integration routes', () => {
@@ -30,17 +43,8 @@ describe('Uploads integration routes', () => {
       _id: TEST_USER_ID,
       email: 'uploader@test.com',
       name: 'Uploader',
-      password: 'Pass1234!'
+      password: 'Pass1234!',
     });
-
-    // Mock auth middleware before importing routes (use static user to keep mock factory pure)
-    jest.mock('../../middleware/auth', () => ({
-      authMiddleware: (req, res, next) => {
-        req.user = { _id: '64b000000000000000000003', email: 'uploader@test.com' };
-        next();
-      },
-      requireAdmin: () => (req, res, next) => next()
-    }));
 
     const profileRoutes = require('../../routes/profile');
     app.use('/api/profile', profileRoutes);
@@ -50,8 +54,11 @@ describe('Uploads integration routes', () => {
     const testFile = path.join(__dirname, '..', 'fixtures', 'test-image.jpg');
     // Ensure fixtures directory exists; tests can still run without the file if needed
     const agent = request(app);
-    const req = agent.put('/api/profile').attach('profilePicture', testFile).field('name', 'Uploader');
-    const res = await req.expect(res => {
+    const req = agent
+      .put('/api/profile')
+      .attach('profilePicture', testFile)
+      .field('name', 'Uploader');
+    const res = await req.expect((res) => {
       // Either 200 or 201 depending on controller implementation
       if (![200, 201].includes(res.status)) throw new Error('Unexpected status ' + res.status);
     });

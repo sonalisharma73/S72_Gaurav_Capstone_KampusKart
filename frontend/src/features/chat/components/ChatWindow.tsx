@@ -1,5 +1,5 @@
 import React, { ComponentType, useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import { io, Socket } from 'socket.io-client';
 import { format } from 'date-fns';
 import {
@@ -25,8 +25,8 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ReplyIcon from '@mui/icons-material/Reply';
-import { API_BASE, SOCKET_URL } from '../../config';
-import { ChatSkeleton } from '../common/SkeletonLoader';
+import { API_BASE, SOCKET_URL } from '../../../config';
+import { ChatSkeleton } from '../../../components/common/SkeletonLoader';
 
 // Chat Color Theme Configuration
 // Using the same color scheme as buttons and other feature components
@@ -766,15 +766,15 @@ const ChatWindow = () => {
                 <Box key={index} sx={{ mb: 1 }}>
                   {attachment.type === 'image' ? (
                     <img
-                    src={attachment.url}
-                    alt={attachment.name}
-                    style={{
-                      maxWidth: '180px',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => window.open(attachment.url, '_blank')}
-                  />
+                      src={attachment.url}
+                      alt={attachment.name}
+                      style={{
+                        maxWidth: '180px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => window.open(attachment.url, '_blank')}
+                    />
                   ) : (
                     <Button
                       variant="outlined"

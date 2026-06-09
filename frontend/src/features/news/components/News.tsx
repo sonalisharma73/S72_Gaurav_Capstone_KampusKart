@@ -1,79 +1,83 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { FeatureModal } from './common/FeatureModal';
-import { SuccessMessage } from './common/SuccessMessage';
-import { PageSkeleton } from './common/SkeletonLoader';
-import { Footer } from './ui/footer';
-import { socialLinks } from '../utils/socialLinks';
-import { useSearchSuggestions } from '../hooks/useSearchSuggestions';
+import { useAuth } from '../../../contexts/AuthContext';
+import { FeatureModal } from '../../../components/common/FeatureModal';
+import { SuccessMessage } from '../../../components/common/SuccessMessage';
+import { PageSkeleton } from '../../../components/common/SkeletonLoader';
+import { Footer } from '../../../components/ui/footer';
+import { socialLinks } from '../../../utils/socialLinks';
+import { useSearchSuggestions } from '../../../hooks/useSearchSuggestions';
 
-// Import from the feature directory
-import { useClubs, ClubCard, ClubFilters, ClubForm, ClubDetail, clubsApi } from '../features/clubs';
-import type { Club } from '../features/clubs/types';
+import { useNews } from '../hooks/useNews';
+import { NewsCard } from './NewsCard';
+import { NewsFilters } from './NewsFilters';
+import { NewsForm } from './NewsForm';
+import { NewsDetail } from './NewsDetail';
+import { newsApi } from '../api';
+import type { NewsItem } from '../types';
 
-const ClubsRecruitment = () => {
+const News = () => {
   const { token, user } = useAuth();
 
   // Custom hook for state and data fetching
   const {
-    clubs,
+    news,
     loading,
     error: fetchError,
     filters,
     updateFilters,
     refresh,
-    removeClub,
-  } = useClubs(token);
+    removeNews,
+  } = useNews(token);
 
   // Local UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'form' | 'detail' | 'delete'>('form');
-  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Search Suggestions Hook
-  const buildSuggestions = useCallback((club: Club, query: string): string[] => {
+  const buildSuggestions = useCallback((item: NewsItem, query: string): string[] => {
     const suggestions: string[] = [];
     const normalizedQuery = query.toLowerCase();
-    if (club.title?.toLowerCase().includes(normalizedQuery)) suggestions.push(club.title);
-    if (club.clubName?.toLowerCase().includes(normalizedQuery)) suggestions.push(club.clubName);
+    if (item.title?.toLowerCase().includes(normalizedQuery)) suggestions.push(item.title);
+    if (item.category?.toLowerCase().includes(normalizedQuery)) suggestions.push(item.category);
     return suggestions;
   }, []);
 
   const { showSuggestions, setShowSuggestions, filteredSuggestions, searchRef } =
-    useSearchSuggestions<Club>({
+    useSearchSuggestions<NewsItem>({
       searchInput: filters.search,
-      items: clubs,
+      items: news,
       buildSuggestions,
     });
 
   // Modal handlers
   const openAddModal = () => {
-    setSelectedClub(null);
+    setSelectedNews(null);
     setModalType('form');
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (club: Club) => {
-    setSelectedClub(club);
+  const openEditModal = (item: NewsItem) => {
+    setSelectedNews(item);
     setModalType('form');
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openDetailModal = (club: Club) => {
-    setSelectedClub(club);
+  const openDetailModal = (item: NewsItem) => {
+    setSelectedNews(item);
     setModalType('detail');
     setIsModalOpen(true);
   };
 
   const openDeleteModal = (id: string) => {
-    const club = clubs.find((c) => c._id === id);
-    if (club) {
-      setSelectedClub(club);
+    const item = news.find((n) => n._id === id);
+    if (item) {
+      setSelectedNews(item);
       setModalType('delete');
       setIsModalOpen(true);
     }
@@ -81,8 +85,17 @@ const ClubsRecruitment = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setSelectedClub(null);
+    setSelectedNews(null);
     setFormError(null);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedNews) return;
+    const success = await removeNews(selectedNews._id);
+    if (success) {
+      setSuccessMessage('News deleted successfully!');
+      closeModal();
+    }
   };
 
   // Action handlers
@@ -92,28 +105,19 @@ const ClubsRecruitment = () => {
     setFormError(null);
 
     try {
-      if (selectedClub) {
-        await clubsApi.updateClub(token, selectedClub._id, formData);
-        setSuccessMessage('Club recruitment updated successfully!');
+      if (selectedNews) {
+        await newsApi.updateNews(token, selectedNews._id, formData);
+        setSuccessMessage('News updated successfully!');
       } else {
-        await clubsApi.createClub(token, formData);
-        setSuccessMessage('Club recruitment added successfully!');
+        await newsApi.createNews(token, formData);
+        setSuccessMessage('News added successfully!');
       }
       refresh();
       closeModal();
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Failed to save recruitment');
+      setFormError(err instanceof Error ? err.message : 'Failed to save news');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedClub) return;
-    const success = await removeClub(selectedClub._id);
-    if (success) {
-      setSuccessMessage('Club recruitment deleted successfully!');
-      closeModal();
     }
   };
 
@@ -125,7 +129,7 @@ const ClubsRecruitment = () => {
     }
   }, [successMessage]);
 
-  if (loading && clubs.length === 0) {
+  if (loading && news.length === 0) {
     return (
       <PageSkeleton
         contentType="cards"
@@ -136,13 +140,13 @@ const ClubsRecruitment = () => {
     );
   }
 
-  const filteredClubs = clubs.filter(
-    (club) =>
-      (filters.status === 'all' || club.status === filters.status) &&
-      (club.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        club.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        club.clubName.toLowerCase().includes(filters.search.toLowerCase()))
-  );
+  const filteredNews = news.filter((n) => {
+    const matchesSearch =
+      n.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+      n.description.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesCategory = filters.category === 'All' || n.category === filters.category;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="min-h-screen bg-white font-sans">
@@ -150,18 +154,18 @@ const ClubsRecruitment = () => {
         <SuccessMessage message={successMessage} onDismiss={() => setSuccessMessage(null)} />
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <h1 className="text-h2 font-extrabold text-black">Clubs Recruitment</h1>
+          <h1 className="text-h2 font-extrabold text-black">Campus News</h1>
           {user?.isAdmin && (
             <button
               onClick={openAddModal}
               className="flex items-center gap-2 px-6 py-3 rounded-lg bg-[#181818] text-white font-bold text-lg hover:bg-[#00C6A7] transition-colors"
             >
-              + Add New Recruitment
+              + Add News
             </button>
           )}
         </div>
 
-        <ClubFilters
+        <NewsFilters
           filters={filters}
           onFilterChange={updateFilters}
           suggestions={filteredSuggestions}
@@ -177,18 +181,25 @@ const ClubsRecruitment = () => {
           </div>
         )}
 
-        {/* Clubs Grid */}
+        {/* News Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClubs.length === 0 ? (
+          {filteredNews.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-xl font-bold text-gray-700">No recruitments found</p>
+              <p className="text-xl font-bold text-gray-700">No news found</p>
               <p className="text-gray-400 text-sm mt-2">
                 Try adjusting your filters or search terms.
               </p>
             </div>
           ) : (
-            filteredClubs.map((club) => (
-              <ClubCard key={club._id} club={club} onSelect={openDetailModal} />
+            filteredNews.map((item) => (
+              <NewsCard
+                key={item._id}
+                news={item}
+                isAdmin={user?.isAdmin}
+                onSelect={openDetailModal}
+                onEdit={openEditModal}
+                onDelete={openDeleteModal}
+              />
             ))
           )}
         </div>
@@ -199,28 +210,28 @@ const ClubsRecruitment = () => {
           onClose={closeModal}
           title={
             modalType === 'form'
-              ? selectedClub
-                ? 'Edit Recruitment'
-                : 'Add New Recruitment'
+              ? selectedNews
+                ? 'Edit News'
+                : 'Add News'
               : modalType === 'detail'
-                ? 'Recruitment Details'
+                ? 'News Details'
                 : 'Confirm Delete'
           }
           error={formError}
           size={modalType === 'detail' ? 'xl' : 'md'}
         >
           {modalType === 'form' && (
-            <ClubForm
-              club={selectedClub}
+            <NewsForm
+              news={selectedNews}
               onSubmit={handleFormSubmit}
               isSubmitting={isSubmitting}
               error={formError}
             />
           )}
 
-          {modalType === 'detail' && selectedClub && (
-            <ClubDetail
-              club={selectedClub}
+          {modalType === 'detail' && selectedNews && (
+            <NewsDetail
+              news={selectedNews}
               isAdmin={user?.isAdmin}
               onEdit={openEditModal}
               onDelete={openDeleteModal}
@@ -229,9 +240,9 @@ const ClubsRecruitment = () => {
 
           {modalType === 'delete' && (
             <div className="p-6 text-center">
-              <h3 className="text-xl font-bold mb-4">Delete Recruitment?</h3>
+              <h3 className="text-xl font-bold mb-4">Delete News Item?</h3>
               <p className="text-gray-600 mb-8">
-                Are you sure you want to delete &quot;{selectedClub?.title}&quot;? This action
+                Are you sure you want to delete &quot;{selectedNews?.title}&quot;? This action
                 cannot be undone.
               </p>
               <div className="flex justify-center gap-4">
@@ -245,7 +256,7 @@ const ClubsRecruitment = () => {
                   onClick={handleDelete}
                   className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold"
                 >
-                  Delete Recruitment
+                  Delete News
                 </button>
               </div>
             </div>
@@ -275,4 +286,4 @@ const ClubsRecruitment = () => {
   );
 };
 
-export default ClubsRecruitment;
+export default News;

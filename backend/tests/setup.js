@@ -17,13 +17,29 @@ const mongoose = require('mongoose');
 
 // If MONGODB_URI is provided (CI uses a service), prefer it. Otherwise, start an in-memory server.
 beforeAll(async () => {
+  const dbName = `kampuskart-test-${process.env.JEST_WORKER_ID || 'main'}`;
+  const defaultLocalUri = `mongodb://127.0.0.1:27017/${dbName}`;
+
   if (!process.env.MONGODB_URI) {
-    mongoServer = await MongoMemoryServer.create();
-    process.env.MONGODB_URI = mongoServer.getUri('kampuskart-test');
+    process.env.MONGODB_URI = defaultLocalUri;
   }
 
-  if (process.env.MONGODB_URI) {
+  try {
     await mongoose.connect(process.env.MONGODB_URI);
+  } catch (err) {
+    // Fallback to MongoMemoryServer if local MongoDB is not running
+    if (process.env.MONGODB_URI === defaultLocalUri) {
+      try {
+        mongoServer = await MongoMemoryServer.create();
+        process.env.MONGODB_URI = mongoServer.getUri(dbName);
+        await mongoose.connect(process.env.MONGODB_URI);
+      } catch (innerErr) {
+        console.error('Failed to start MongoMemoryServer fallback:', innerErr);
+        throw innerErr;
+      }
+    } else {
+      throw err;
+    }
   }
 });
 
