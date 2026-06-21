@@ -73,6 +73,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     } else {
       onImagesChange([...images, ...newImages]);
     }
+  // Clear the file input so the same file can be selected again
     e.target.value = '';
   };
 
